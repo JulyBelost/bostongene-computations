@@ -1,8 +1,6 @@
-import asyncio
-
 from sqlalchemy.orm import Session
 from fastapi import FastAPI
-from fastapi import Depends
+from fastapi import Depends, BackgroundTasks
 import db
 import models
 
@@ -42,12 +40,12 @@ async def get_computation(id_: int, session: Session = Depends(get_session)):
 @app.get(
     "/calculate/{value}",
 )
-async def start_computation(value: int, session: Session = Depends(get_session)):
+async def start_computation(value: int, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     new_computation = models.Computation(value=value)
     session.add(new_computation)
     session.commit()
     session.refresh(new_computation)
 
-    asyncio.create_task(compute(value, new_computation.id))
+    background_tasks.add_task(compute, value, new_computation.id)
 
     return new_computation.id
